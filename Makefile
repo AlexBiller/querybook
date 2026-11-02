@@ -1,5 +1,5 @@
 SHELL := /bin/bash
-.PHONY: bundled_off prod_web prod_worker prod_scheduler docs remove_running_dev_image clean
+.PHONY: bundled_off prod_web prod_worker prod_scheduler docs remove_running_dev_image clean clean_pyc clean_docker
 
 bundled: dev_image
 	docker-compose up
@@ -64,5 +64,11 @@ clean: clean_pyc clean_docker
 clean_pyc:
 	find . -name "*.pyc" -delete
 	find . -type d -name __pycache__ -delete
+# Only removes containers, networks, volumes and untagged images created by this project's compose files.
+# Never use a global `docker system prune`, which would delete unrelated Docker resources on the host.
 clean_docker:
-	docker system prune --volumes
+	docker-compose down -v --rmi local
+	docker-compose -f containers/docker-compose.dev.yml down -v --rmi local
+	docker-compose -f containers/docker-compose.prod.yml down -v --rmi local
+	docker-compose --file containers/docker-compose.test.yml down -v --rmi local
+	docker-compose -f docs_website/docker-compose.yml --project-directory=. down -v --rmi local
